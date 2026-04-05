@@ -12,6 +12,7 @@ from aqt import mw, theme
 from aqt.utils import tooltip
 from anki import version as anki_version
 from aqt.utils import tr
+from .tomorrow_stats import calculate_tomorrow_count, get_tomorrow_scheduled_count
 
 #-------------Configuration------------------
 config = mw.addonManager.getConfig(__name__)
@@ -22,16 +23,31 @@ DaysToConsider = config['DaysToConsider']
 def generate_style():
     """Generate the required CSS style based on the theme mode."""
     if theme.theme_manager.night_mode:
-        color_config_keys = ['NewColorDark', 'ReviewColorDark', 'LearnColorDark', 'TotalDueColorDark', 'TotalColorDark']
+        color_config_keys = [
+            ('NewColorDark', 'NewColorDark'),
+            ('ReviewColorDark', 'ReviewColorDark'),
+            ('LearnColorDark', 'LearnColorDark'),
+            ('TotalDueColorDark', 'TotalDueColorDark'),
+            ('TotalColorDark', 'TotalColorDark'),
+            ('TomorrowColorDark', 'TotalDueColorDark'),
+        ]
     else:
-        color_config_keys = ['NewColorLight', 'ReviewColorLight', 'LearnColorLight', 'TotalDueColorLight', 'TotalColorLight']
+        color_config_keys = [
+            ('NewColorLight', 'NewColorLight'),
+            ('ReviewColorLight', 'ReviewColorLight'),
+            ('LearnColorLight', 'LearnColorLight'),
+            ('TotalDueColorLight', 'TotalDueColorLight'),
+            ('TotalColorLight', 'TotalColorLight'),
+            ('TomorrowColorLight', 'TotalDueColorLight'),
+        ]
 
     style_elements = [
-        ".new-color { color:" + config[color_config_keys[0]] + ";}",
-        ".review-color { color:" + config[color_config_keys[1]] + ";}",
-        ".learn-color { color:" + config[color_config_keys[2]] + ";}",
-        ".totaldue-color { color:" + config[color_config_keys[3]] + ";}",
-        ".total-color { color:" + config[color_config_keys[4]] + ";}"
+        ".new-color { color:" + config[color_config_keys[0][0]] + ";}",
+        ".review-color { color:" + config[color_config_keys[1][0]] + ";}",
+        ".learn-color { color:" + config[color_config_keys[2][0]] + ";}",
+        ".totaldue-color { color:" + config[color_config_keys[3][0]] + ";}",
+        ".total-color { color:" + config[color_config_keys[4][0]] + ";}",
+        ".tomorrow-color { color:" + config.get(color_config_keys[5][0], config[color_config_keys[5][1]]) + ";}",
     ]
 
     return "<style type=\"text/css\">" + ' '.join(style_elements) + "</style>"
@@ -43,6 +59,7 @@ def renderStats(self, _old):
     txtDue      = tr.card_stats_review_count()
     txtLrnDue   = tr.statistics_due_count()
     txtTotal    = tr.statistics_total()
+    txtTomorrow = "Tomorrow"
     txtAverage  = tr.statistics_average()
     txtMore     = tr.studying_more().lower()
 
@@ -72,6 +89,8 @@ def renderStats(self, _old):
 
     total        = (CountTimesNew*new) + lrn + due
     totalDisplay = new + lrn + due
+    tomorrow_due = get_tomorrow_scheduled_count(self.mw.col)
+    tomorrow_total = calculate_tomorrow_count(tomorrow_due=tomorrow_due)
 
     # Get studied cards
     # anki_point_version = int(anki_version.split(".")[2])
@@ -105,6 +124,7 @@ def renderStats(self, _old):
                 &nbsp;{}:&nbsp; <b class='review-color'> {}</b>
                 &nbsp;{}:&nbsp; <b class='totaldue-color'> {}</b>
                 &nbsp;{}:&nbsp; <b class='total-color'> {}</b>
+                &nbsp;{}:&nbsp; <b class='tomorrow-color'> {}</b>
             </div>
             <div style='display:table-cell;vertical-align:middle;padding-left:2em;'>
                 {}: <br> {}
@@ -112,7 +132,7 @@ def renderStats(self, _old):
                 {}
             </div>
         </div>
-    """.format(_old(self), txtNew, new, txtLrn, lrn, txtDue, due, txtLrnDue, lrn+due, txtTotal, totalDisplay, txtAverage, txtCardsMin, timeLeftDisplay)
+    """.format(_old(self), txtNew, new, txtLrn, lrn, txtDue, due, txtLrnDue, lrn+due, txtTotal, totalDisplay, txtTomorrow, tomorrow_total, txtAverage, txtCardsMin, timeLeftDisplay)
     # """.format(_old(self), _("New"), new, _("Learn"), lrn, _("To Review"), due, _("Due"), lrn+due, _("Total"), totalDisplay, _("Average"), speed, _("Cards"), _("Minutes").replace("s", ""), str(ngettext("%s minute.", "%s minutes.", minutes) % minutes).replace(".", ""), _("More").lower())
     
     return buf

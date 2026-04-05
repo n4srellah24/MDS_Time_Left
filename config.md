@@ -38,3 +38,5 @@ This setting allows you to control whether the estimated time left to study is d
 ### Number colors [Name]
 [Color Names Sorted by Color Groups](https://www.w3schools.com/colors/colors_groups.asp)<br/>
 All modern browsers support the following 140 color names (click on a color name, or a hex value, to view the color as the background-color along with different text colors):
+
+The add-on now supports dedicated `TomorrowColorLight` and `TomorrowColorDark` values for the `Tomorrow` counter shown after `Total`.
