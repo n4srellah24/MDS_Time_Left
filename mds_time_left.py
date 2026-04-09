@@ -9,63 +9,48 @@ import anki
 # from anki.lang import _, ngettext
 import aqt
 from aqt import mw, theme
-from aqt.utils import tooltip
-from anki import version as anki_version
 from aqt.utils import tr
+from .stats_layout import (
+    build_average_stats,
+    build_display_stats,
+    build_stat_rows,
+    get_learn_color,
+    get_reviews_color,
+    get_total_color,
+)
 from .tomorrow_stats import calculate_tomorrow_count, get_tomorrow_scheduled_count
 
 #-------------Configuration------------------
 config = mw.addonManager.getConfig(__name__)
-CountTimesNew = config['CountTimesNew']
 DaysToConsider = config['DaysToConsider']
 #-------------Configuration------------------
 
 def generate_style():
     """Generate the required CSS style based on the theme mode."""
     if theme.theme_manager.night_mode:
-        color_config_keys = [
-            ('NewColorDark', 'NewColorDark'),
-            ('ReviewColorDark', 'ReviewColorDark'),
-            ('LearnColorDark', 'LearnColorDark'),
-            ('TotalDueColorDark', 'TotalDueColorDark'),
-            ('TotalColorDark', 'TotalColorDark'),
-            ('TomorrowColorDark', 'TotalDueColorDark'),
-        ]
+        new_color_key = 'NewColorDark'
+        due_color_key = 'TotalDueColorDark'
     else:
-        color_config_keys = [
-            ('NewColorLight', 'NewColorLight'),
-            ('ReviewColorLight', 'ReviewColorLight'),
-            ('LearnColorLight', 'LearnColorLight'),
-            ('TotalDueColorLight', 'TotalDueColorLight'),
-            ('TotalColorLight', 'TotalColorLight'),
-            ('TomorrowColorLight', 'TotalDueColorLight'),
-        ]
+        new_color_key = 'NewColorLight'
+        due_color_key = 'TotalDueColorLight'
 
     style_elements = [
-        ".new-color { color:" + config[color_config_keys[0][0]] + ";}",
-        ".review-color { color:" + config[color_config_keys[1][0]] + ";}",
-        ".learn-color { color:" + config[color_config_keys[2][0]] + ";}",
-        ".totaldue-color { color:" + config[color_config_keys[3][0]] + ";}",
-        ".total-color { color:" + config[color_config_keys[4][0]] + ";}",
-        ".tomorrow-color { color:" + config.get(color_config_keys[5][0], config[color_config_keys[5][1]]) + ";}",
+        ".new-color { color:" + config[new_color_key] + ";}",
+        ".review-color { color:" + config[due_color_key] + ";}",
+        ".learn-color { color:" + get_learn_color(is_night_mode=theme.theme_manager.night_mode) + ";}",
+        ".totaldue-color { color:" + get_reviews_color(is_night_mode=theme.theme_manager.night_mode) + ";}",
+        ".total-color { color:" + get_total_color(is_night_mode=theme.theme_manager.night_mode) + ";}",
+        ".tomorrow-color { color:" + config[due_color_key] + ";}",
     ]
 
     return "<style type=\"text/css\">" + ' '.join(style_elements) + "</style>"
 
 def renderStats(self, _old):
 
-    txtNew      = tr.statistics_counts_new_cards()
-    txtLrn      = tr.card_stats_review_log_type_learn()
-    txtDue      = tr.card_stats_review_count()
-    txtLrnDue   = tr.statistics_due_count()
-    txtTotal    = tr.statistics_total()
     txtTomorrow = "Tomorrow"
     txtAverage  = tr.statistics_average()
-    txtMore     = tr.studying_more().lower()
 
-    txtDaysCount = tr.statistics_in_time_span_days(DaysToConsider)  # Usando uma tradução existente para 'days'
-    # txtToday = tr.statistics_today_title()
-
+    txtDaysCount = tr.statistics_in_time_span_days(DaysToConsider)
     if DaysToConsider > 1:
         txtAverage = f"{txtAverage} ({txtDaysCount})"
 
@@ -87,52 +72,64 @@ def renderStats(self, _old):
             lrn += tree[3]
             due += tree[2]
 
-    total        = (CountTimesNew*new) + lrn + due
-    totalDisplay = new + lrn + due
+    display_stats = build_display_stats(new=new, learn=lrn, review=due)
     tomorrow_due = get_tomorrow_scheduled_count(self.mw.col)
     tomorrow_total = calculate_tomorrow_count(tomorrow_due=tomorrow_due)
-
-    # Get studied cards
-    # anki_point_version = int(anki_version.split(".")[2])
-    # query_time_param = (self.mw.col.sched.day_cutoff if anki_point_version > 49 else self.mw.col.sched.dayCutoff) - 86400
-    # query_time_param = self.mw.col.sched.day_cutoff - 86400
-    total_seconds = 86400 * (DaysToConsider)  # Calcula o total de segundos para os dias configurados
+    stat_rows = build_stat_rows(display_stats, tomorrow_total=tomorrow_total)
+    total_seconds = 86400 * DaysToConsider
     query_time_param = self.mw.col.sched.day_cutoff - total_seconds
-    cards, thetime   = self.mw.col.db.first("""select count(), sum(time)/1000 from revlog where id > ?""", query_time_param * 1000)
-
-    cards           = cards or 0
-    thetime         = thetime or 0
-    speed           = cards * 60 / max(1, thetime)
-    formatted_speed = "{:.01f}".format(speed)
-    txtCardsMin     = tr.statistics_cards_per_min(formatted_speed)
-
-    minutes         = int(total / max(1, speed))
-    txtMinutes      = tr.studying_minute(minutes).replace('.', '')
-
-    if config.get("ShowTimeLeft", True):
-        timeLeftDisplay = f"{txtMinutes} {txtMore}"
-    else:
-        timeLeftDisplay = ""
+    cards, thetime = self.mw.col.db.first(
+        """select count(), sum(time)/1000 from revlog where id > ?""",
+        query_time_param * 1000,
+    )
+    cards = cards or 0
+    thetime = thetime or 0
+    speed = cards * 60 / max(1, thetime)
+    average_stats = build_average_stats(
+        days_to_consider=DaysToConsider,
+        cards_per_min="{:.01f}".format(speed),
+    )
+    txtCardsMin = tr.statistics_cards_per_min(average_stats["cards_per_min"])
 
     buf = generate_style() + """
         <div style='display:table;padding-top:1.5em;'>
-            <div style='display:table-cell;'> 
-                {} 
+            <div style='display:table-cell;'>
+                {}
                 <hr>
-                &nbsp;{}:&nbsp; <b class='new-color'> {}</b>
-                &nbsp;{}:&nbsp; <b class='learn-color'> {}</b>
-                &nbsp;{}:&nbsp; <b class='review-color'> {}</b>
-                &nbsp;{}:&nbsp; <b class='totaldue-color'> {}</b>
-                &nbsp;{}:&nbsp; <b class='total-color'> {}</b>
-                &nbsp;{}:&nbsp; <b class='tomorrow-color'> {}</b>
+                &nbsp;{}:&nbsp; <b class='{}'> {}</b>
+                &nbsp;{}:&nbsp; <b class='{}'> {}</b>
+                &nbsp;{}:&nbsp; <b class='{}'> {}</b>
+                &nbsp;{}:&nbsp; <b class='{}'> {}</b>
+                &nbsp;{}:&nbsp; <b class='{}'> {}</b>
+                &nbsp;{}:&nbsp; <b class='{}'> {}</b>
             </div>
             <div style='display:table-cell;vertical-align:middle;padding-left:2em;'>
                 {}: <br> {}
-                <br><br>
-                {}
             </div>
         </div>
-    """.format(_old(self), txtNew, new, txtLrn, lrn, txtDue, due, txtLrnDue, lrn+due, txtTotal, totalDisplay, txtTomorrow, tomorrow_total, txtAverage, txtCardsMin, timeLeftDisplay)
+    """.format(
+        _old(self),
+        stat_rows[0][0],
+        stat_rows[0][1],
+        stat_rows[0][2],
+        stat_rows[1][0],
+        stat_rows[1][1],
+        stat_rows[1][2],
+        stat_rows[2][0],
+        stat_rows[2][1],
+        stat_rows[2][2],
+        stat_rows[3][0],
+        stat_rows[3][1],
+        stat_rows[3][2],
+        stat_rows[4][0],
+        stat_rows[4][1],
+        stat_rows[4][2],
+        stat_rows[5][0],
+        stat_rows[5][1],
+        stat_rows[5][2],
+        txtAverage,
+        txtCardsMin,
+    )
     # """.format(_old(self), _("New"), new, _("Learn"), lrn, _("To Review"), due, _("Due"), lrn+due, _("Total"), totalDisplay, _("Average"), speed, _("Cards"), _("Minutes").replace("s", ""), str(ngettext("%s minute.", "%s minutes.", minutes) % minutes).replace(".", ""), _("More").lower())
     
     return buf

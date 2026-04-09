@@ -1,17 +1,7 @@
 {
-	"CountTimesNew": 2,
 	"DaysToConsider": 1, 
 	"NewColorLight": "Blue",
-	"ReviewColorLight": "Red",
-	"LearnColorLight": "Red",
 	"TotalDueColorLight": "#00AA00",
-	"TotalColorLight": "Grey",
-	"TomorrowColorLight": "#008080",
 	"NewColorDark": "#4DC1F1",
-	"ReviewColorDark": "Orange",
-	"LearnColorDark": "Orange",
-	"TotalDueColorDark": "#00AA00",
-	"TotalColorDark": "Red",
-	"TomorrowColorDark": "#5FD5D5",
-	"ShowTimeLeft": true
+	"TotalDueColorDark": "#00AA00"
 }

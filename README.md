@@ -2,11 +2,18 @@
 
 <b>#### New Change:</b>
 
-<b>Fix deprecated API usage</b>
+<b>Updated stats layout and cleaned configuration</b>
 
 <b>#### About:</b>
 
-This addon shows extra information of the due cards and returns the expected time to finalize (Due+New).
+This add-on shows extra deck overview stats in the order <b>New, Learn, Due, Reviews, Total, Tomorrow</b>, plus the current <b>average cards/minute</b>.
+
+<ul>
+  <li><b>Due</b> shows only review cards.</li>
+  <li><b>Reviews</b> shows <code>Learn + Due</code>.</li>
+  <li><b>Total</b> shows the full sum for today.</li>
+  <li>The old time-left estimate has been removed.</li>
+</ul>
 
 <b>Before:</b>
 
@@ -22,23 +29,9 @@ This addon shows extra information of the due cards and returns the expected tim
 
 <b>#### Configuration option:</b>
 
-The default steps for "New" Anki cards are 1min and 10min meaning that you see New cards actually a minimum of <b>TWO</b> times that day.
-You can now configure how many times new cards will be counted.
-
-<b>CountTimesNew [number]:</b>
-
-<ul>
-  <li>CountTimesNew = 1 (old version)</li>
-  <li>Quantify '1' time the "new card" time | Example: Steps (10 1440)</li>
-  <li>CountTimesNew = 2 (default)</li>
-  <li>Quantify '2' times the "new card" time | Example: Steps (1 10)</li>
-  <li>CountTimesNew = n (replace "n" with the number of rotations of the same day)</li>
-  <li>Quantify 'n' times the "new card" time | Example: Steps (1 10 10 20 30...) => n=5</li>
-</ul>
-
 <b>DaysToConsider [number]:</b>
 
-This setting allows you to configure how many days of review data should be considered when calculating the estimated time left to study. By default, only the current day's data is used.
+This setting controls how many days of revlog history are used to calculate the average <code>cards/minute</code>. By default, only the current day's data is used.
 
 <ul>
   <li>DaysToConsider = 1 (default) | Consider only the current day's review data.</li>
@@ -46,13 +39,14 @@ This setting allows you to configure how many days of review data should be cons
   <li>DaysToConsider = n | Consider the current day and the previous n-1 days' review data.</li>
 </ul>
 
-<b>ShowTimeLeft [boolean]:</b>
-
-This setting allows you to toggle the display of the estimated time left for studying. Some users may find this information motivating, while others might prefer not to see it to reduce stress.
+<b>Colors:</b>
 
 <ul>
-  <li>ShowTimeLeft = true (default) | Display the time left to study.</li>
-  <li>ShowTimeLeft = false | Do not display the time left to study.</li>
+  <li><code>NewColorLight</code> / <code>NewColorDark</code> control <b>New</b>.</li>
+  <li><code>TotalDueColorLight</code> / <code>TotalDueColorDark</code> control both <b>Due</b> and <b>Tomorrow</b>.</li>
+  <li><b>Learn</b> is fixed to red.</li>
+  <li><b>Reviews</b> is fixed to yellow.</li>
+  <li><b>Total</b> is fixed to black in light theme and white in dark theme.</li>
 </ul>
 
 <b>Number colors [Name]:</b> <a href="https://www.w3schools.com/colors/colors_groups.asp">Color Names Sorted by Color Groups</a>
@@ -71,6 +65,7 @@ All modern browsers support the following 140 color names (click on a color name
 
 <ul>
 
+  <li>v3.0 - 2026-04-09 - Remapped deck stats to New/Learn/Due/Reviews/Total/Tomorrow, removed time-left, kept average cards/minute, and cleaned stale configuration/docs.</li>
   <li>v2.9 - 2025-06-23 - Fix deprecated API usage</li>
   <li>v2.8 - 2025-05-22 - Downgrade to 2.6 (BugFix)</li>
   <li>v2.7 - 2025-05-21 - Fixed compatibility with Anki 25.02.5 (using `deck_due_tree`) and resolved potential conflict during Anki closing/profile switching.</li>
